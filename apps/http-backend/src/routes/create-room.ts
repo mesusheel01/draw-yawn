@@ -8,6 +8,7 @@ const router = Router();
 router.use(userMiddleware);
 
 router.post("/", (req, res) => {
+
     const roomId = uuidv4();
     res.json({ roomId });
 });
