@@ -41,9 +41,6 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
-      uuid:
-        specifier: ^11.0.5
-        version: 11.0.5
     devDependencies:
       '@repo/backend-common':
         specifier: workspace:*
@@ -51,6 +48,9 @@ importers:
       '@repo/common':
         specifier: workspace:*
         version: link:../../packages/common
+      '@repo/database-config':
+        specifier: workspace:*
+        version: link:../../packages/database-config
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
@@ -119,9 +119,6 @@ importers:
       '@types/node':
         specifier: ^22.10.6
         version: 22.10.6
-      dotenv:
-        specifier: ^16.4.7
-        version: 16.4.7
     devDependencies:
       '@repo/typescript-config':
         specifier: workspace:*
@@ -1049,10 +1046,6 @@ packages:
 
   dotenv@16.0.3:
     resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
-    engines: {node: '>=12'}
-
-  dotenv@16.4.7:
-    resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
     engines: {node: '>=12'}
 
   ecdsa-sig-formatter@1.0.11:
@@ -2482,10 +2475,6 @@ packages:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
 
-  uuid@11.0.5:
-    resolution: {integrity: sha512-508e6IcKLrhxKdBbcA2b4KQZlLVp2+J5UwQ6F7Drckkc5N9ZJwFa4TgWtsww9UG8fGHbm6gbV19TdM5pQ4GaIA==}
-    hasBin: true
-
   v8-compile-cache-lib@3.0.1:
     resolution: {integrity: sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==}
 
@@ -3464,8 +3453,6 @@ snapshots:
       no-case: 2.3.2
 
   dotenv@16.0.3: {}
-
-  dotenv@16.4.7: {}
 
   ecdsa-sig-formatter@1.0.11:
     dependencies:
@@ -5154,8 +5141,6 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   utils-merge@1.0.1: {}
-
-  uuid@11.0.5: {}
 
   v8-compile-cache-lib@3.0.1: {}
 

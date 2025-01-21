@@ -1,16 +1,32 @@
 import { Router } from "express";
-import { v4 as uuidv4 } from "uuid";
 import userMiddleware from "../middlewares";
+import { prismaClient } from "@repo/database-config/db";
 
 
-const router = Router();
+const router:Router = Router();
+
 
 router.use(userMiddleware);
 
-router.post("/", (req, res) => {
+router.get("/",async (req, res) => {
+    //@ts-ignore
+    const {roomName, userId} = req
 
-    const roomId = uuidv4();
-    res.json({ roomId });
+    try {
+        const room = await prismaClient.room.create({
+            data:{
+                slug: roomName,
+                adminId: userId
+            }
+        })
+        res.status(200).json({
+            roomId: room.id
+        })
+    } catch (error) {
+        res.status(411).json({
+            message:"Room already exists!"
+        })
+    }
 });
 
 export default router;

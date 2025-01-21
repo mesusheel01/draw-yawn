@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/middlewares/index.ts","./src/routes/create-room.ts","./src/routes/userroute.ts"],"version":"5.7.2"}

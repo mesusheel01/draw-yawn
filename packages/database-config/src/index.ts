@@ -1,5 +1,3 @@
-import { PrismaClient } from "@prisma/client/extension";
+import { PrismaClient } from "@prisma/client";
 
-export const primsaClient = new PrismaClient();
-
-
+export const prismaClient = new PrismaClient();

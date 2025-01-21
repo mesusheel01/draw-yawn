@@ -16,13 +16,13 @@
     "@types/uuid": "^10.0.0",
     "bcrypt": "^5.1.1",
     "express": "^4.21.2",
-    "jsonwebtoken": "^9.0.2",
-    "uuid": "^11.0.5"
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
     "@repo/backend-common": "workspace:*",
-    "@repo/common": "workspace:*"
+    "@repo/common": "workspace:*",
+    "@repo/database-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*"
   },
   "keywords": [],
   "author": "",

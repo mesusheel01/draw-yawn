@@ -13,8 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/node": "^22.10.6",
-    "dotenv": "^16.4.7"
+    "@types/node": "^22.10.6"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*"
