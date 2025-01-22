@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Room" ADD CONSTRAINT "Room_pkey" PRIMARY KEY ("id");
+
+-- AddForeignKey
+ALTER TABLE "Chat" ADD CONSTRAINT "Chat_roomId_fkey" FOREIGN KEY ("roomId") REFERENCES "Room"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

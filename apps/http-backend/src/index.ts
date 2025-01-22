@@ -6,8 +6,8 @@ const app = express();
 
 app.use(express.json());
 app.use("/api/v1/user", userRouter );
-app.use("/api/v1/create-room", createRoomRouter);
+app.use("/api/v1/room", createRoomRouter);
 
-app.listen(3000, () => {
+app.listen(3004, () => {
     console.log("Server is running on port 3000");
 });
