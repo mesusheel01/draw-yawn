@@ -42,9 +42,9 @@ router.post("/", async (req, res) => {
 router.get("/chats/:roomId", async(req, res)=>{
     try {
         const roomId = Number(req.params.roomId)
-    const messages = await prismaClient.room.findMany({
+    const messages = await prismaClient.chat.findMany({
         where:{
-            id:roomId
+            roomId:roomId
         },
         orderBy:{
             id:"desc"

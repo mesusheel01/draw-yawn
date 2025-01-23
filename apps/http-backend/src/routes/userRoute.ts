@@ -43,7 +43,7 @@ userRouter.post("/signup", async (req, res) => {
         });
 
         // Generate a token
-        const token = jwt.sign({ userId: newUser.id }, JWT_SECRET, { expiresIn: "1h" });
+        const token = jwt.sign({ userId: newUser.id }, JWT_SECRET);
 
         res.status(201).json({ message: "User created successfully", token });
     } catch (err) {

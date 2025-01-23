@@ -61,7 +61,7 @@ export function AuthPage({ isSignin }: { isSignin: boolean }) {
             ) : (
               <p>
                 Already have an account?{" "}
-                <a href="http://localhost:3000/signin" className="text-indigo-600 hover:underline">
+                <a href="http://localhost:3000/" className="text-indigo-600 hover:underline">
                   Sign in
                 </a>
               </p>
