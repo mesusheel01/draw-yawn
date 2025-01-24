@@ -1,3 +1,6 @@
+import { HTTP_BACKEND_URL } from "@/config";
+import axios from "axios";
+
 type shape = {
     type:'rect';
     x:number;
@@ -12,11 +15,23 @@ type shape = {
 }
 
 
-export default function initCanvas(canvas : HTMLCanvasElement ){
+export default async function initCanvas(canvas : HTMLCanvasElement , roomId:string , socket:WebSocket){
 
     const ctx  =canvas.getContext('2d')
-    let existingShape: shape[] = []
-    if(!ctx) {return}
+    let existingShape: shape[] = await getExistingShape(roomId)
+    if(!ctx) {
+        return;
+    }
+    socket.onmessage = (event)=>{
+        const message = JSON.parse(event.data);
+
+        if(message.type === 'chat'){
+            const parsedShape = JSON.parse(message.message)
+            console.log(parsedShape)
+            existingShape.push(parsedShape.shape)
+            clearCanvas(existingShape, canvas,ctx)
+        }
+    }
 
     ctx.fillStyle = "rgba(0,0,0)"
     ctx.fillRect(0,0,canvas.width,canvas.height)
@@ -33,14 +48,21 @@ export default function initCanvas(canvas : HTMLCanvasElement ){
         isClicked =false
         const width = e.clientX - startX
         const height = e.clientY - startY
-        existingShape.push({
+        const shape:shape = ({
             type:'rect',
             x:startX,
             y:startY,
             height,
             width
         })
-
+        existingShape.push(shape)
+        socket.send(JSON.stringify({
+            type:'chat',
+            message:JSON.stringify({
+                shape
+            }),
+            roomId
+        }))
     })
     canvas.addEventListener("mousemove", (e)=>{
         if(isClicked){
@@ -65,4 +87,22 @@ function clearCanvas(existingShape: shape[],canvas:HTMLCanvasElement, ctx: Canva
             ctx.strokeRect(shape.x,shape.y,shape.width,shape.height)
         }
     })
+}
+
+
+async function getExistingShape(roomId:string){
+    const response = await axios.get(`${HTTP_BACKEND_URL}api/v1/room/chats/${roomId}`,{
+        headers:{
+            Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4MjM2ZjY1Yy1kNDk4LTRlZGQtYTVhYi0yZTE0YTk0NGQwZDMiLCJpYXQiOjE3Mzc3NDY1MjQsImV4cCI6MTczNzc1MDEyNH0.4jhQD2s_m6ImNL4Da5Cl1jTkDI94Jb3ToOEyQNF_rUI"
+        }
+    })
+
+    const message = response.data.messages
+    console.log(message)
+    const shapes = message.map((x: {message:string})=>{
+        const messageData = JSON.parse(x.message)
+        return messageData.shape;
+    })
+    return shapes
+
 }
