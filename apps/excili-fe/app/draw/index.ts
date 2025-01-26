@@ -1,7 +1,7 @@
 import { HTTP_BACKEND_URL } from "@/config";
 import axios from "axios";
 
-type shape = {
+type Shape = {
     type:'rect';
     x:number;
     y:number;
@@ -15,17 +15,17 @@ type shape = {
 }
 
 
-export default async function initCanvas(canvas : HTMLCanvasElement , roomId:string , socket:WebSocket){
+export async function initCanvas(canvas : HTMLCanvasElement , roomId:string , socket:WebSocket){
 
-    const ctx  =canvas.getContext('2d')
-    let existingShape: shape[] = await getExistingShape(roomId)
+    const ctx  = canvas.getContext('2d')
+    let existingShape: Shape[] = await getExistingShape(roomId)
     if(!ctx) {
         return;
     }
     socket.onmessage = (event)=>{
         const message = JSON.parse(event.data);
 
-        if(message.type === 'chat'){
+        if(message.type == 'chat'){
             const parsedShape = JSON.parse(message.message)
             console.log(parsedShape)
             existingShape.push(parsedShape.shape)
@@ -48,21 +48,30 @@ export default async function initCanvas(canvas : HTMLCanvasElement , roomId:str
         isClicked =false
         const width = e.clientX - startX
         const height = e.clientY - startY
-        const shape:shape = ({
+        const shape:Shape = ({
             type:'rect',
             x:startX,
             y:startY,
             height,
             width
         })
-        existingShape.push(shape)
-        socket.send(JSON.stringify({
-            type:'chat',
-            message:JSON.stringify({
-                shape
-            }),
-            roomId
-        }))
+        existingShape.push(shape);
+
+        if (socket.readyState === WebSocket.OPEN) {
+            console.log("Sending shape data to backend:", {
+                type: "chat",
+                message: JSON.stringify({ shape }),
+                roomId
+            });
+            socket.send(JSON.stringify({
+                type: "chat",
+                message: JSON.stringify({ shape }),
+                roomId
+            }));
+        } else {
+            console.error("WebSocket is not open. Message not sent.");
+        }
+
     })
     canvas.addEventListener("mousemove", (e)=>{
         if(isClicked){
@@ -76,33 +85,42 @@ export default async function initCanvas(canvas : HTMLCanvasElement , roomId:str
     })
 }
 
-function clearCanvas(existingShape: shape[],canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D){
-    ctx.clearRect(0,0,canvas.width,canvas.height)
-    ctx.fillStyle = "rgba(0,0,0)"
-    ctx.fillRect(0,0,canvas.width,canvas.height)
+function clearCanvas(existingShape: Shape[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "rgba(0,0,0)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    existingShape.map(shape =>{
-        if(shape.type === 'rect'){
-            ctx.strokeStyle = 'rgba(255,255,255)'
-            ctx.strokeRect(shape.x,shape.y,shape.width,shape.height)
+    existingShape.forEach(shape => {
+        if (shape && shape.type === 'rect') {
+            ctx.strokeStyle = 'rgba(255,255,255)';
+            ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
+        } else if (shape && shape.type === 'circle') {
+            ctx.strokeStyle = 'rgba(255,255,255)';
+            ctx.beginPath();
+            ctx.arc(shape.centerX, shape.centerY, shape.radius, 0, 2 * Math.PI);
+            ctx.stroke();
         }
-    })
+    });
 }
 
-
-async function getExistingShape(roomId:string){
-    const response = await axios.get(`${HTTP_BACKEND_URL}api/v1/room/chats/${roomId}`,{
-        headers:{
-            Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4MjM2ZjY1Yy1kNDk4LTRlZGQtYTVhYi0yZTE0YTk0NGQwZDMiLCJpYXQiOjE3Mzc3NDY1MjQsImV4cCI6MTczNzc1MDEyNH0.4jhQD2s_m6ImNL4Da5Cl1jTkDI94Jb3ToOEyQNF_rUI"
+async function getExistingShape(roomId: string) {
+    const response = await axios.get(`${HTTP_BACKEND_URL}api/v1/room/chats/${roomId}`, {
+        headers: {
+            Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5NmYyN2EzNi01Mzg1LTQ5ODgtOWU4NC0zYWI5YTg3ZjdlMWYiLCJpYXQiOjE3Mzc5MDE2NjYsImV4cCI6MTczNzkwODg2Nn0._JoEz1O0hYOXtoJuovs0iMuOOYceNr11p3CuRE1IXW0"
         }
-    })
+    });
 
-    const message = response.data.messages
-    console.log(message)
-    const shapes = message.map((x: {message:string})=>{
-        const messageData = JSON.parse(x.message)
-        return messageData.shape;
-    })
-    return shapes
-
+    const messages = response.data.messages || [];
+    const shapes = messages
+        .map((x: { message: string }) => {
+            try {
+                const messageData = JSON.parse(x.message);
+                return messageData.shape || null;
+            } catch (e) {
+                console.error("Invalid shape data:", x.message);
+                return null;
+            }
+        })
+        .filter((shape: Shape | null) => shape !== null); // Filter out invalid shapes
+    return shapes;
 }

@@ -7,23 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User{
-    id          String           @id          @default(uuid())
-    username    String           @unique
-    email       String           @unique
-    password    String
-    photo       String?
-    rooms       Room[]
-    chat        Chat[]
+model User {
+  id       String  @id @default(uuid())
+  password String
+  photo    String?
+  username String  @unique
+  email    String  @unique
+  chat     Chat[]
+  rooms    Room[]
 }
 
-model Room{
-    id               Int                 @id @default(autoincrement())
-    slug             String              @unique
-    createAt         DateTime            @default(now())
-    adminId          String
-    admin            User                @relation(fields: [adminId], references: [id])
-    chats            Chat[]
+model Room {
+  id          Int       @id @default(autoincrement())
+  slug        String    @unique
+  createdAt   DateTime  @default(now())
+  adminId     String
+  admin       User      @relation(fields: [adminId], references: [id])
+  chats       Chat[]
 }
 
 model Chat {

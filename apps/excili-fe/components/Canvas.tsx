@@ -1,4 +1,4 @@
-import initCanvas from "@/app/draw"
+import {initCanvas} from "@/app/draw"
 import { useEffect, useRef } from "react"
 
 export default function Canvas({roomId, socket}: {roomId:string,socket:WebSocket},) {
@@ -16,3 +16,4 @@ export default function Canvas({roomId, socket}: {roomId:string,socket:WebSocket
     </canvas>
     )
 }
+
