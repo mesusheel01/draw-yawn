@@ -1,5 +1,6 @@
 import { HTTP_BACKEND_URL } from "@/config";
 import axios from "axios";
+import { Jolly_Lodger } from "next/font/google";
 
 type Shape = {
     type:'rect';
@@ -12,10 +13,14 @@ type Shape = {
     centerX:number;
     centerY:number;
     radius:number;
+} | {
+    type: "line"
+    startPos: number;
+    endPos: number;
 }
 
 
-export async function initCanvas(canvas : HTMLCanvasElement , roomId:string , socket:WebSocket){
+export async function initCanvas(canvas : HTMLCanvasElement , roomId:string , socket:WebSocket, selectionTool: string){
 
     const ctx  = canvas.getContext('2d')
     let existingShape: Shape[] = await getExistingShape(roomId)
@@ -48,29 +53,31 @@ export async function initCanvas(canvas : HTMLCanvasElement , roomId:string , so
         isClicked =false
         const width = e.clientX - startX
         const height = e.clientY - startY
-        const shape:Shape = ({
-            type:'rect',
-            x:startX,
-            y:startY,
-            height,
-            width
-        })
-        existingShape.push(shape);
-
-        if (socket.readyState === WebSocket.OPEN) {
-            console.log("Sending shape data to backend:", {
-                type: "chat",
-                message: JSON.stringify({ shape }),
-                roomId
-            });
-            socket.send(JSON.stringify({
-                type: "chat",
-                message: JSON.stringify({ shape }),
-                roomId
-            }));
-        } else {
-            console.error("WebSocket is not open. Message not sent.");
+        let shape : Shape | null = null ;
+        if(selectionTool === "rect"){
+            shape = ({
+                type:'rect',
+                x:startX,
+                y:startY,
+                height,
+                width
+            })
+        }else if(selectionTool === "circle"){
+            const radius = Math.max(width, height)/2
+            shape = ({
+                type: "circle",
+                radius: radius,
+                centerX: startX + radius,
+                centerY: startY + radius
+            })
         }
+        if(!shape) return 
+        existingShape.push(shape);
+        socket.send(JSON.stringify({
+            type: "chat",
+            message: JSON.stringify({ shape }),
+            roomId
+        }));
 
     })
     canvas.addEventListener("mousemove", (e)=>{
@@ -106,7 +113,7 @@ function clearCanvas(existingShape: Shape[], canvas: HTMLCanvasElement, ctx: Can
 async function getExistingShape(roomId: string) {
     const response = await axios.get(`${HTTP_BACKEND_URL}api/v1/room/chats/${roomId}`, {
         headers: {
-            Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5NmYyN2EzNi01Mzg1LTQ5ODgtOWU4NC0zYWI5YTg3ZjdlMWYiLCJpYXQiOjE3Mzc5MDE2NjYsImV4cCI6MTczNzkwODg2Nn0._JoEz1O0hYOXtoJuovs0iMuOOYceNr11p3CuRE1IXW0"
+            Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5NmYyN2EzNi01Mzg1LTQ5ODgtOWU4NC0zYWI5YTg3ZjdlMWYiLCJpYXQiOjE3Mzc5MTg1NTd9.u_B0b3LPpku_lTGnysXczIwmccaEXqICA-llTI7IJoo"
         }
     });
 
