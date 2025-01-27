@@ -2,10 +2,20 @@
 
 import {initCanvas} from "@/app/draw"
 import { useEffect, useRef, useState } from "react"
+import { ToolButton } from "./ToolButton"
+import { MoveRight, Circle, RectangleHorizontalIcon } from "lucide-react"
+
+type shape = "circle"| "rect"|"arrow"
 
 export default function Canvas({roomId, socket}: {roomId:string,socket:WebSocket},) {
 
-    const [selectionTool, setSelectionTool] = useState("rect")
+    const [selectionTool, setSelectionTool] = useState<shape>("circle")
+
+    useEffect(()=>{
+        // @ts-ignore
+        window.selectionTool = selectionTool
+        console.log("tool changed")
+    },[selectionTool])
 
    const canvasRef = useRef<HTMLCanvasElement>(null)
    useEffect(()=>{
@@ -14,20 +24,36 @@ export default function Canvas({roomId, socket}: {roomId:string,socket:WebSocket
         }
     },[canvasRef])
 
-
     return (
-    <canvas ref={canvasRef} height={1000} width={1000}>
-        <div className="text-white">
-            <div onClick={()=>setSelectionTool('arrow')}>
-                Arrow
-            </div>
-            <div onClick={()=>setSelectionTool('circle')}>
-                Circle
-            </div>
-            <div onClick={()=>setSelectionTool('rect')}>
-                Rect
-            </div>
-        </div>
-    </canvas>
+        <div className="h-[100vh] overflow-hidden text-center flex flex-col items-center">
+    <canvas ref={canvasRef} height={window.innerHeight} width={window.innerWidth}>
+        </canvas>
+        <ToolBar setSelectionTool={setSelectionTool} selectionTool={selectionTool} />
+    </div>
     )
+}
+
+export function ToolBar({selectionTool, setSelectionTool}:{
+    selectionTool: shape,
+    setSelectionTool:(s:shape)=>void
+}){
+    return <div className="fixed top-0 p-2 border rounded-lg border-gray-500 flex gap-10 m-2"
+>
+        <ToolButton
+        active={selectionTool==="arrow"}
+        onClick={()=>setSelectionTool("arrow")}
+        icon={<MoveRight />}
+        />
+        <ToolButton
+        icon={<RectangleHorizontalIcon />}
+        active={selectionTool==="rect"}
+        onClick={()=>setSelectionTool("rect")}
+        />
+        <ToolButton
+        icon={<Circle />}
+        active={selectionTool==="circle"}
+        onClick={()=>setSelectionTool("circle")}
+        />
+
+    </div>
 }
