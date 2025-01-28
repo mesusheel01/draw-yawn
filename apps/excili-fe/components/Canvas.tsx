@@ -4,23 +4,23 @@ import {initCanvas} from "@/app/draw"
 import { useEffect, useRef, useState } from "react"
 import { ToolButton } from "./ToolButton"
 import { MoveRight, Circle, RectangleHorizontalIcon } from "lucide-react"
+import { Game } from "@/app/draw/Game"
 
 type shape = "circle"| "rect"|"arrow"
 
 export default function Canvas({roomId, socket}: {roomId:string,socket:WebSocket},) {
-
+    const [game, setGame] = useState<Game>()
     const [selectionTool, setSelectionTool] = useState<shape>("circle")
 
     useEffect(()=>{
-        // @ts-ignore
-        window.selectionTool = selectionTool
-        console.log("tool changed")
-    },[selectionTool])
+        game?.setTool(selectionTool)
+    },[selectionTool,game])
 
    const canvasRef = useRef<HTMLCanvasElement>(null)
    useEffect(()=>{
-        if(canvasRef.current){
-            initCanvas(canvasRef.current, roomId, socket,selectionTool)
+       if(canvasRef.current){
+            const g = new Game(canvasRef.current, roomId, socket)
+            setGame(g)
         }
     },[canvasRef])
 

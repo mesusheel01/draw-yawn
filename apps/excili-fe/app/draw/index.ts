@@ -14,10 +14,10 @@ type Shape = {
     radius: number;
 } | {
     type:"arrow";
-    startX: number;
-    startY: number;
-    endX:number;
-    endY:number;
+    x: number;
+    y: number;
+    endX: number;
+    endY: number;
 }
 
 export async function initCanvas(
@@ -88,6 +88,16 @@ export async function initCanvas(
                 centerX: startX + width / 2,
                 centerY: startY + height / 2
             };
+        }else if(selectionTool === "arrow"){
+            const endX = e.offsetX - startX
+            const endY = e.offsetY - startY
+            shape = {
+                type: "arrow",
+                x: startX,
+                y: startY,
+                endX: endX,
+                endY: endY,
+            }
         }
 
         if (shape) {
