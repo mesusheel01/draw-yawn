@@ -16,6 +16,8 @@ type Shape = {
     type:"arrow";
     startX: number;
     startY: number;
+    endX:number;
+    endY:number;
 }
 
 export async function initCanvas(
