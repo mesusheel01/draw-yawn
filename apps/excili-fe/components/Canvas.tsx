@@ -3,10 +3,10 @@
 import {initCanvas} from "@/app/draw"
 import { useEffect, useRef, useState } from "react"
 import { ToolButton } from "./ToolButton"
-import { MoveRight, Circle, RectangleHorizontalIcon } from "lucide-react"
+import { MoveRight, Circle, RectangleHorizontalIcon, Eraser } from "lucide-react"
 import { Game } from "@/app/draw/Game"
 
-type shape = "circle"| "rect"|"arrow"
+type shape = "circle"| "rect"|"arrow" | "eraser"
 
 export default function Canvas({roomId, socket}: {roomId:string,socket:WebSocket},) {
     const [game, setGame] = useState<Game>()
@@ -54,6 +54,12 @@ export function ToolBar({selectionTool, setSelectionTool}:{
         active={selectionTool==="circle"}
         onClick={()=>setSelectionTool("circle")}
         />
+        <ToolButton
+        icon={<Eraser />}
+        active={selectionTool==="eraser"}
+        onClick={()=>setSelectionTool("eraser")}
+        />
+
 
     </div>
 }

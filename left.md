@@ -5,3 +5,5 @@
 - Find the sending chat and database blast issue : **Done**
 
 - Create the game.ts file by reading the index.ts in draw/: *****
+
+- Inside index.js in excali-fe and figure out to implement shapes to delete: **Not Done**

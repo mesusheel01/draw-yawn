@@ -39,14 +39,22 @@ export async function initCanvas(
             const message = JSON.parse(event.data);
 
             if (message.type === 'chat' && message.message) {
-                const parsedShape = JSON.parse(message.message);
-                if (parsedShape.shape) {
-                    existingShape.push(parsedShape.shape);
+                const parsedData = JSON.parse(message.message);
+                if (parsedData.action === "delete") {
+                    // Remove deleted shapes from local array
+                    existingShape = existingShape.filter(shape =>
+                        !parsedData.shapes.some((deletedShape: Shape) =>
+                            JSON.stringify(deletedShape) === JSON.stringify(shape)
+                        )
+                    );
+                    clearCanvas(existingShape, canvas, ctx);
+                } else if (parsedData.shape) {
+                    existingShape.push(parsedData.shape);
                     clearCanvas(existingShape, canvas, ctx);
                 }
             }
         } catch (error) {
-            console.error("Error parsing shape from socket message:", error);
+            console.error("Error parsing message from socket:", error);
         }
     };
 
@@ -59,8 +67,66 @@ export async function initCanvas(
 
     canvas.addEventListener("mousedown", (e) => {
         isClicked = true;
-        startX = e.offsetX; // Use offsetX for accurate canvas coordinates
+        startX = e.offsetX;
         startY = e.offsetY;
+
+        // Add eraser functionality
+        // @ts-ignore
+        const selectionTool = window.selectionTool;
+        if (selectionTool === "eraser") {
+            const clickX = e.offsetX;
+            const clickY = e.offsetY;
+
+            // Find shapes to erase (within 10px radius of click)
+            const shapesToDelete = existingShape.filter((shape) => {
+                if (shape.type === "rect") {
+                    return clickX >= shape.x &&
+                           clickX <= shape.x + shape.width &&
+                           clickY >= shape.y &&
+                           clickY <= shape.y + shape.height;
+                } else if (shape.type === "circle") {
+                    const distance = Math.sqrt(
+                        Math.pow(clickX - shape.centerX, 2) +
+                        Math.pow(clickY - shape.centerY, 2)
+                    );
+                    return distance <= shape.radius;
+                } else if (shape.type === "arrow") {
+                    // Simple hit detection for arrow (checks if click is near start or end)
+                    const distanceToStart = Math.sqrt(
+                        Math.pow(clickX - shape.x, 2) +
+                        Math.pow(clickY - shape.y, 2)
+                    );
+                    const distanceToEnd = Math.sqrt(
+                        Math.pow(clickX - (shape.x + shape.endX), 2) +
+                        Math.pow(clickY - (shape.y + shape.endY), 2)
+                    );
+                    return distanceToStart <= 10 || distanceToEnd <= 10;
+                }
+                return false;
+            });
+
+            if (shapesToDelete.length > 0) {
+                // Remove shapes from local array
+                existingShape = existingShape.filter(shape =>
+                    !shapesToDelete.includes(shape)
+                );
+
+                // Send delete message through socket
+                socket.send(
+                    JSON.stringify({
+                        type: "chat",
+                        message: JSON.stringify({
+                            action: "delete",
+                            shapes: shapesToDelete
+                        }),
+                        roomId
+                    })
+                );
+
+                // Update canvas
+                clearCanvas(existingShape, canvas, ctx);
+            }
+        }
     });
 
     canvas.addEventListener("mouseup", (e) => {
@@ -167,7 +233,7 @@ async function getExistingShape(roomId: string): Promise<Shape[]> {
             {
                 headers: {
                     Authorization:
-                        "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5NmYyN2EzNi01Mzg1LTQ5ODgtOWU4NC0zYWI5YTg3ZjdlMWYiLCJpYXQiOjE3Mzc5MTg1NTd9.u_B0b3LPpku_lTGnysXczIwmccaEXqICA-llTI7IJoo"
+                        "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5NmYyN2EzNi01Mzg1LTQ5ODgtOWU4NC0zYWI5YTg3ZjdlMWYiLCJpYXQiOjE3MzkzODYyNzZ9.pSZjy4lWMPlVkJLF67VrFlafMCBuIJXQS_-5XOJWMWg"
                 }
             }
         );

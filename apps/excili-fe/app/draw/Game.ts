@@ -22,7 +22,7 @@ export type Shape =
     endY: number;
 }
 
-type Tool = "arrow" | "circle" | "rect";
+type Tool = "arrow" | "circle" | "rect" | "eraser";
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -79,12 +79,15 @@ export class Game {
         if (message.type === "chat" && message.message) {
           const parsedShape = JSON.parse(message.message);
           if (parsedShape.shape) {
-            existingShapes.push(parsedShape.shape);
+            this.existingShapes.push(parsedShape.shape);
             this.clearCanvas();
           }
+        } else if (message.type === "delete_shape") {
+          this.existingShapes.splice(message.index, 1);
+          this.clearCanvas();
         }
       } catch (error) {
-        console.error("Error parsing shape from socket message:", error);
+        console.error("Error parsing message from socket:", error);
       }
     };
 
@@ -92,100 +95,154 @@ export class Game {
     this.clearCanvas();
   }
 
-    mouseDownHandler =  (e) => {
-        this.isClicked = true;
-        this.startX = e.offsetX; // Use offsetX for accurate canvas coordinates
-        this.startY = e.offsetY;
+  private isPointInShape(x: number, y: number, shape: Shape): boolean {
+    switch (shape.type) {
+      case "rect":
+        return x >= shape.x && x <= shape.x + shape.width &&
+               y >= shape.y && y <= shape.y + shape.height;
+      case "circle":
+        const dx = x - shape.centerX;
+        const dy = y - shape.centerY;
+        return Math.sqrt(dx * dx + dy * dy) <= shape.radius;
+      case "arrow":
+        // Simplified hit detection - checks if point is near the line
+        const threshold = 5;
+        const A = { x: shape.x, y: shape.y };
+        const B = { x: shape.endX, y: shape.endY };
+        const distance = this.pointToLineDistance(x, y, A, B);
+        return distance <= threshold;
     }
+  }
 
-    mouseUpHandler =  (e) => {
-      if (!this.isClicked) return;
-      this.isClicked = false;
+  private pointToLineDistance(x: number, y: number, A: {x: number, y: number}, B: {x: number, y: number}): number {
+    const numerator = Math.abs((B.y - A.y) * x - (B.x - A.x) * y + B.x * A.y - B.y * A.x);
+    const denominator = Math.sqrt(Math.pow(B.y - A.y, 2) + Math.pow(B.x - A.x, 2));
+    return numerator / denominator;
+  }
 
-      const width = e.offsetX - this.startX;
-      const height = e.offsetY - this.startY;
-
-      let shape: Shape | null = null;
-
-      if (this.selectedTool === "rect") {
-        shape = {
-          type: "rect",
-          x: this.startX,
-          y: this.startY,
-          height,
-          width,
-        };
-      } else if (this.selectedTool === "circle") {
-        const radius = Math.sqrt(width * width + height * height) / 2; // Use diagonal for radius
-        shape = {
-          type: "circle",
-          radius,
-          centerX: this.startX + width / 2,
-          centerY: this.startY + height / 2,
-        };
-      }else if(this.selectedTool === "arrow"){
-        const endX = e.offsetX
-        const endY = e.offsetY
-        shape = {
-            type: "arrow",
-            x: this.startX ,
-            y: this.startY,
-            endX: endX,
-            endY: endY,
-        }
-    }
-
-      if (shape) {
-        this.existingShapes.push(shape);
-        this.socket.send(
-          JSON.stringify({
-            type: "chat",
-            message: JSON.stringify({ shape }),
-            roomId: this.roomId,
-          })
-        );
-        this.clearCanvas();
-      }
-    }
-
-    mouseMoveHandler = (e) => {
-      if (!this.isClicked) return;
-
-      const width = e.offsetX - this.startX;
-      const height = e.offsetY - this.startY;
-
+  private async deleteShape(index: number) {
+    // Add API call to delete shape from database
+    try {
+      await fetch(`/api/shapes/${this.roomId}/${index}`, { method: 'DELETE' });
+      this.existingShapes.splice(index, 1);
+      this.socket.send(JSON.stringify({
+        type: "delete_shape",
+        index,
+        roomId: this.roomId,
+      }));
       this.clearCanvas();
+    } catch (error) {
+      console.error("Error deleting shape:", error);
+    }
+  }
 
-      this.ctx.strokeStyle = "rgba(255, 255, 255)";
-      if (this.selectedTool === "rect") {
-        this.ctx.strokeRect(this.startX, this.startY, width, height);
-      } else if (this.selectedTool === "circle") {
-        const radius = Math.sqrt(width * width + height * height) / 2;
-        const centerX = this.startX + width / 2;
-        const centerY = this.startY + height / 2;
+  mouseDownHandler = (e: MouseEvent) => {
+    if (this.selectedTool === "eraser") {
+      const x = e.offsetX;
+      const y = e.offsetY;
 
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-        this.ctx.stroke();
-        this.ctx.closePath();
-      }else if(this.selectedTool  === "arrow"){
-        const endX = e.offsetX
-        const endY = e.offsetY
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.startX,this.startY)
-        this.ctx.lineTo(endX,endY)
-        this.ctx.font = "16px arial"
-        this.ctx.fillStyle = "white"
-        this.ctx.fillText(">", endX-10,endY+5)
-        if((endX - this.startX)<0){
-            this.ctx.direction="rtl"
-        }else{
-            this.ctx.direction="ltr"
-
+      // Find and delete the first shape that contains the clicked point
+      for (let i = this.existingShapes.length - 1; i >= 0; i--) {
+        if (this.isPointInShape(x, y, this.existingShapes[i])) {
+          this.deleteShape(i);
+          return;
         }
-        this.ctx.stroke()
+      }
+    } else {
+      this.isClicked = true;
+      this.startX = e.offsetX;
+      this.startY = e.offsetY;
+    }
+  }
+
+  mouseUpHandler =  (e: MouseEvent) => {
+    if (!this.isClicked) return;
+    this.isClicked = false;
+
+    const width = e.offsetX - this.startX;
+    const height = e.offsetY - this.startY;
+
+    let shape: Shape | null = null;
+
+    if (this.selectedTool === "rect") {
+      shape = {
+        type: "rect",
+        x: this.startX,
+        y: this.startY,
+        height,
+        width,
+      };
+    } else if (this.selectedTool === "circle") {
+      const radius = Math.sqrt(width * width + height * height) / 2; // Use diagonal for radius
+      shape = {
+        type: "circle",
+        radius,
+        centerX: this.startX + width / 2,
+        centerY: this.startY + height / 2,
+      };
+    }else if(this.selectedTool === "arrow"){
+      const endX = e.offsetX
+      const endY = e.offsetY
+      shape = {
+          type: "arrow",
+          x: this.startX ,
+          y: this.startY,
+          endX: endX,
+          endY: endY,
       }
     }
+
+    if (shape) {
+      this.existingShapes.push(shape);
+      this.socket.send(
+        JSON.stringify({
+          type: "chat",
+          message: JSON.stringify({ shape }),
+          roomId: this.roomId,
+        })
+      );
+      this.clearCanvas();
+    }
+  }
+
+  mouseMoveHandler = (e: MouseEvent) => {
+    if (!this.isClicked) return;
+
+    const width = e.offsetX - this.startX;
+    const height = e.offsetY - this.startY;
+
+    this.clearCanvas();
+
+    this.ctx.strokeStyle = "rgba(255, 255, 255)";
+    if (this.selectedTool === "rect") {
+      this.ctx.strokeRect(this.startX, this.startY, width, height);
+    } else if (this.selectedTool === "circle") {
+      const radius = Math.sqrt(width * width + height * height) / 2;
+      const centerX = this.startX + width / 2;
+      const centerY = this.startY + height / 2;
+
+      this.ctx.beginPath();
+      this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      this.ctx.stroke();
+      this.ctx.closePath();
+    }else if(this.selectedTool  === "arrow"){
+      const endX = e.offsetX
+      const endY = e.offsetY
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.startX,this.startY)
+      this.ctx.lineTo(endX,endY)
+      this.ctx.font = "16px arial"
+      this.ctx.fillStyle = "white"
+      this.ctx.fillText(">", endX-10,endY+5)
+      if((endX - this.startX)<0){
+          this.ctx.direction="rtl"
+      }else{
+          this.ctx.direction="ltr"
+
+      }
+      this.ctx.stroke()
+    }
+  }
   initMouseHandlers(){
     this.canvas.addEventListener("mousedown", this.mouseDownHandler)
     this.canvas.addEventListener("mouseup", this.mouseUpHandler)
@@ -211,23 +268,27 @@ export class Game {
         );
         this.ctx.stroke();
         this.ctx.closePath();
-      }else if(shape.type  === "arrow"){
-        this.ctx.beginPath();
-        this.ctx.moveTo(shape.x,shape.y)
-        this.ctx.lineTo(shape.endX,shape.endY)
-        this.ctx.stroke()
-        this.ctx.closePath()
+      }else if(shape.type === "arrow") {
+      // Draw the line
+      this.ctx.beginPath();
+      this.ctx.moveTo(shape.x, shape.y);
+      this.ctx.lineTo(shape.endX, shape.endY);
+      this.ctx.stroke();
 
-        this.ctx.font = "16px arial"
-        this.ctx.fillStyle = "white"
-        if((shape.endX - shape.x)<0){
-            this.ctx.direction="rtl"
-        }else{
-            this.ctx.direction="ltr"
+      // Calculate angle for arrow direction
+      const angle = Math.atan2(shape.endY - shape.y, shape.endX - shape.x);
 
-        }
-        this.ctx.fillText(">", shape.endX-10,shape.endY+5)
-      }
+      // Draw arrowhead
+      this.ctx.save();
+      this.ctx.translate(shape.endX, shape.endY);
+      this.ctx.rotate(angle);
+      this.ctx.beginPath();
+      this.ctx.moveTo(-10, -5);
+      this.ctx.lineTo(0, 0);
+      this.ctx.lineTo(-10, 5);
+      this.ctx.stroke();
+      this.ctx.restore();
+    }
     });
   }
 }

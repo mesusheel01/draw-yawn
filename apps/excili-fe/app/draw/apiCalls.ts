@@ -9,7 +9,7 @@ export async function getExistingShape(roomId: string): Promise<Shape[]> {
             {
                 headers: {
                     Authorization:
-                        "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5NmYyN2EzNi01Mzg1LTQ5ODgtOWU4NC0zYWI5YTg3ZjdlMWYiLCJpYXQiOjE3Mzc5MTg1NTd9.u_B0b3LPpku_lTGnysXczIwmccaEXqICA-llTI7IJoo"
+                        "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5NmYyN2EzNi01Mzg1LTQ5ODgtOWU4NC0zYWI5YTg3ZjdlMWYiLCJpYXQiOjE3MzkzODYyNzZ9.pSZjy4lWMPlVkJLF67VrFlafMCBuIJXQS_-5XOJWMWg"
                 }
             }
         );
